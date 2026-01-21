@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+.vscode/
+*.log
+venv/
+.venv/
+resultados.csv  # Remova se quiser manter rastreado

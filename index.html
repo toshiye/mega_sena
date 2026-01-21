@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mega-Sena Intelligence Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .bola {
+            width: 2.8rem;
+            height: 2.8rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .bg-meta {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        /* Efeito de brilho pulsante para o card de IA */
+        .card-neural {
+            border: 2px solid transparent;
+            background: linear-gradient(white, white) padding-box,
+                linear-gradient(135deg, #6366f1 0%, #a855f7 100%) border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-neural::after {
+            content: "🧠";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        /* Bolas com cores diferenciadas para a IA */
+        .bg-neural {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen text-gray-800">
+
+    <div class="container mx-auto px-4 py-8">
+        <header
+            class="flex justify-between items-center mb-10 bg-white p-6 rounded-2xl shadow-sm border-b-4 border-green-600">
+            <div>
+                <h1 class="text-3xl font-extrabold text-green-700">Mega-Sena <span
+                        class="text-gray-400">Intelligence</span></h1>
+                <p class="text-sm text-gray-500 italic">Engenharia de Dados & Estatística Aplicada</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="toggleModal()"
+                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-semibold transition shadow-lg">
+                    + Novo Sorteio
+                </button>
+                <button onclick="syncData()" id="btnSync"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-semibold transition shadow-lg">
+                    Sincronizar Novos Resultados
+                </button>
+            </div>
+        </header>
+
+        <div id="ultimo-resultado-banner"
+            class="mb-10 bg-gradient-to-r from-green-800 to-green-600 rounded-2xl p-6 text-white shadow-xl hidden">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div>
+                    <span id="status-badge"
+                        class="bg-yellow-400 text-green-900 text-xs font-bold px-3 py-1 rounded-full uppercase">Acumulou!</span>
+                    <h2 class="text-3xl font-black mt-2">Concurso <span id="resumo-concurso">0000</span></h2>
+                    <p class="text-green-100" id="resumo-data">--/--/----</p>
+                </div>
+                <div class="flex gap-3" id="resumo-bolas"></div>
+                <div class="border-l border-green-500 pl-6 ml-6 hidden md:block">
+                    <p class="text-[10px] uppercase font-bold opacity-70 mb-2">Âncoras de Popularidade (Prováveis
+                        Quadras)</p>
+                    <div id="satelites-container" class="flex flex-wrap gap-1 max-w-[200px]"></div>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-green-500 flex gap-6 text-sm">
+                <span>Sena: <b id="ganhadores-sena">0</b></span>
+                <span>Quina: <b id="ganhadores-quina">0</b></span>
+                <span>Quadra: <b id="ganhadores-quadra">0</b></span>
+            </div>
+        </div>
+
+        <section id="secao-auditoria" class="mb-12 hidden">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">🔍 Auditoria de Performance (IA vs Real)</h2>
+            <div id="container-auditoria" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </section>
+
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
+                <span class="text-amber-500">★</span> Meta-Análise (Consenso das Lógicas)
+            </h2>
+            <div id="meta-container" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+        </section>
+
+        <hr class="mb-12 border-gray-200">
+
+        <section class="mb-12">
+            <h2 class="text-xl font-bold mb-6 text-gray-600 uppercase tracking-widest text-sm">Estratégias Especialistas
+                (Base)</h2>
+            <div id="base-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-90"></div>
+        </section>
+
+        <section class="mt-16 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <h2 class="text-2xl font-bold mb-8 text-gray-800 flex items-center gap-2 border-b pb-4">
+                <span class="text-blue-500">📊</span> Dashboards Analíticos
+            </h2>
+            <div class="mb-16 max-w-xl mx-auto">
+                <h3 class="text-center text-xs font-bold text-gray-400 mb-6 uppercase tracking-widest">Convergência da
+                    Meta-Análise</h3>
+                <canvas id="chartRadar"></canvas>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div class="bg-gray-50 p-6 rounded-xl">
+                    <h3 class="text-center text-xs font-bold text-gray-500 mb-4 uppercase">Top 10 Mais Atrasados</h3>
+                    <canvas id="chartAtraso"></canvas>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl">
+                    <h3 class="text-center text-xs font-bold text-gray-500 mb-4 uppercase">Top 10 Mais Frequentes</h3>
+                    <canvas id="chartFrequencia"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="mt-12 bg-white p-8 rounded-2xl shadow-sm border-t-4 border-indigo-500 relative">
+            <div id="loading-comparativo"
+                class="absolute inset-0 bg-white bg-opacity-80 z-10 flex flex-col items-center justify-center transition-opacity duration-300">
+                <div class="flex gap-1 mb-3">
+                    <div class="w-2 h-2 bg-indigo-600 rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-indigo-600 rounded-full animate-bounce [animation-delay:-.3s]"></div>
+                    <div class="w-2 h-2 bg-indigo-600 rounded-full animate-bounce [animation-delay:-.5s]"></div>
+                </div>
+                <p class="text-indigo-600 text-[10px] font-black uppercase tracking-widest">IA Treinando histórico...
+                </p>
+            </div>
+
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800">IA Neural vs. Estatística Base</h3>
+                    <p class="text-sm text-gray-500">Comparativo de assertividade nos últimos 15 concursos</p>
+                </div>
+                <div class="flex gap-4 text-xs font-bold">
+                    <span class="flex items-center gap-1">
+                        <div class="w-3 h-3 bg-indigo-500 rounded"></div> IA Neural
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <div class="w-3 h-3 bg-gray-400 rounded"></div> Média Base
+                    </span>
+                </div>
+            </div>
+            <div class="h-[250px]">
+                <canvas id="chartComparativoIA"></canvas>
+            </div>
+        </section>
+
+        <section class="mt-12 bg-gray-900 p-8 rounded-2xl shadow-2xl text-white">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h3 class="text-xl font-bold text-green-400">Simulação de Backtesting</h3>
+                    <p class="text-gray-400 text-sm">Desempenho da estratégia nos últimos 50 concursos</p>
+                </div>
+                <select id="selectSimulacao" onchange="carregarSimulacao()"
+                    class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <option value="favoritos">Estratégia: Favoritos</option>
+                    <option value="recentes">Estratégia: Recentes</option>
+                    <option value="misto">Estratégia: Mix Especialistas</option>
+                </select>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartPerformance"></canvas>
+            </div>
+            <div id="resumo-premios"
+                class="flex flex-wrap gap-8 mt-8 p-4 bg-gray-800 rounded-xl border border-gray-700 font-mono text-lg justify-center md:justify-start">
+            </div>
+        </section>
+
+        <section class="mt-8 bg-white p-8 rounded-2xl shadow-lg border-2 border-amber-100">
+            <h3 class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
+                <span class="text-amber-500">🏆</span> Top 3 Estratégias Mais Eficazes
+            </h3>
+            <div id="ranking-container" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+        </section>
+
+        <section class="mt-12 bg-gray-50 rounded-3xl p-8 border border-gray-200">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-black text-gray-800">Laboratório de Simulação</h2>
+                    <p class="text-gray-500 text-sm">Valide a eficácia da IA nos últimos 50 concursos reais.</p>
+                </div>
+                <button id="btn-stress" onclick="executarStressTest()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-2xl transition-all flex items-center justify-center gap-3">
+                    <svg id="spinner-stress" class="hidden animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                    <span id="texto-btn-stress">Rodar Simulação Técnica</span>
+                </button>
+            </div>
+
+            <div id="painel-stress" class="hidden animate-fade-in">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                        <p class="text-[10px] uppercase font-bold text-gray-400">Média de Acertos</p>
+                        <p id="stress-media" class="text-2xl font-black text-blue-600">--</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                        <p class="text-[10px] uppercase font-bold text-gray-400">Quadras</p>
+                        <p id="stress-quadras" class="text-2xl font-black text-green-600">--</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                        <p class="text-[10px] uppercase font-bold text-gray-400">Quinas</p>
+                        <p id="stress-quinas" class="text-2xl font-black text-purple-600">--</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                        <p class="text-[10px] uppercase font-bold text-gray-400">Senas</p>
+                        <p id="stress-senas" class="text-2xl font-black text-amber-500">--</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                        <p class="text-[10px] uppercase font-bold text-gray-400">Conformidade</p>
+                        <p id="stress-filtros" class="text-2xl font-black text-gray-800">100%</p>
+                    </div>
+                </div>
+
+                <p class="text-[10px] uppercase font-bold text-gray-400 mb-2 text-center">Linha do Tempo de
+                    Assertividade</p>
+                <div id="stress-timeline" class="flex flex-wrap gap-1 justify-center">
+                </div>
+            </div>
+
+            <div class="mt-8 overflow-hidden rounded-xl border border-gray-100 bg-white">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-[10px] font-bold text-gray-500 uppercase">Data/Hora</th>
+                            <th class="px-6 py-3 text-left text-[10px] font-bold text-gray-500 uppercase">Média</th>
+                            <th class="px-6 py-3 text-left text-[10px] font-bold text-gray-500 uppercase">Prêmios
+                                Encontrados</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-historico-stress" class="divide-y divide-gray-200 text-sm text-gray-600">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl">
+            <h3 class="text-2xl font-bold mb-6">Cadastrar Novo Sorteio</h3>
+            <form id="form-sorteio" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium">Nº Concurso</label>
+                        <input type="number" id="concurso" required class="w-full border rounded-lg p-2 bg-gray-50">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">Data</label>
+                        <input type="date" id="data" required class="w-full border rounded-lg p-2 bg-gray-50">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Dezenas (1 a 60)</label>
+                    <div class="grid grid-cols-6 gap-2">
+                        <input type="number" name="bola" min="1" max="60" required
+                            class="border rounded p-2 text-center font-bold text-green-700">
+                        <input type="number" name="bola" min="1" max="60" required
+                            class="border rounded p-2 text-center font-bold text-green-700">
+                        <input type="number" name="bola" min="1" max="60" required
+                            class="border rounded p-2 text-center font-bold text-green-700">
+                        <input type="number" name="bola" min="1" max="60" required
+                            class="border rounded p-2 text-center font-bold text-green-700">
+                        <input type="number" name="bola" min="1" max="60" required
+                            class="border rounded p-2 text-center font-bold text-green-700">
+                        <input type="number" name="bola" min="1" max="60" required
+                            class="border rounded p-2 text-center font-bold text-green-700">
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-8">
+                    <button type="button" onclick="toggleModal()"
+                        class="flex-1 py-2 bg-gray-100 rounded-lg font-semibold text-gray-600">Cancelar</button>
+                    <button type="submit"
+                        class="flex-1 py-2 bg-green-600 text-white rounded-lg font-bold shadow-md">Salvar no
+                        Banco</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API = "http://localhost:8000/api";
+        let chartAtraso, chartFrequencia, chartRadar, chartPerformance;
+
+        function toggleModal() {
+            document.getElementById('modal').classList.toggle('hidden');
+        }
+
+        async function carregarResumoTopo() {
+            try {
+                const resp = await fetch(`${API}/ultimo-resumo`);
+                const d = await resp.json();
+                if (d && !d.erro) {
+                    const banner = document.getElementById('ultimo-resultado-banner');
+                    document.getElementById('resumo-concurso').innerText = d.concurso;
+                    document.getElementById('resumo-data').innerText = new Date(d.data_sorteio).toLocaleDateString('pt-BR');
+                    document.getElementById('ganhadores-sena').innerText = d.ganhadores_sena;
+                    document.getElementById('ganhadores-quina').innerText = d.ganhadores_quina;
+                    document.getElementById('ganhadores-quadra').innerText = d.ganhadores_quadra;
+                    const dezenasOficiais = [d.bola1, d.bola2, d.bola3, d.bola4, d.bola5, d.bola6];
+                    document.getElementById('resumo-bolas').innerHTML = dezenasOficiais
+                        .map(n => `<div class="w-10 h-10 bg-white text-green-700 rounded-full flex items-center justify-center font-bold shadow-lg">${String(n).padStart(2, '0')}</div>`)
+                        .join('');
+                    const badge = document.getElementById('status-badge');
+                    badge.innerText = d.acumulou ? "Acumulou!" : "Sorteado";
+                    badge.className = d.acumulou ? "bg-yellow-400 text-green-900 text-xs font-bold px-3 py-1 rounded-full uppercase" : "bg-blue-400 text-white text-xs font-bold px-3 py-1 rounded-full uppercase";
+
+                    try {
+                        const respSat = await fetch(`${API}/estimativa-satelite/${d.concurso}`);
+                        const sat = await respSat.json();
+                        if (sat && sat.ancoras_provaveis) {
+                            const satHtml = sat.ancoras_provaveis.map((n, index) => {
+                                const opacity = index < 3 ? 'opacity-100 font-bold border-yellow-400' : 'opacity-60 border-green-400';
+                                return `<span class="text-[11px] bg-green-900 bg-opacity-60 border ${opacity} px-2 py-0.5 rounded text-white font-mono">${String(n).padStart(2, '0')}</span>`;
+                            }).join('');
+                            document.getElementById('satelites-container').innerHTML = satHtml;
+                        }
+                    } catch (errSat) { console.error(errSat); }
+                    banner.classList.remove('hidden');
+                }
+            } catch (e) { console.error("Erro ao carregar resumo do topo:", e); }
+        }
+
+        /* async function carregarDados() {
+            try {
+                const resp = await fetch(`${API}/palpites`);
+                const data = await resp.json();
+                if (data.status === "sucesso") {
+                    renderCards('meta-container', data.meta_analise, 'bg-meta');
+                    renderCards('base-container', data.estrategias_base, 'bg-green-600');
+                    return data;
+                }
+            } catch (erro) { console.error("Erro nos dados:", erro); }
+        } */
+
+        async function carregarDados() {
+            try {
+                const resp = await fetch(`${API}/palpites`);
+                const data = await resp.json();
+                if (data.status === "sucesso") {
+                    renderCards('meta-container', data.meta_analise, 'bg-meta', data.debug_ia);
+                    renderCards('base-container', data.estrategias_base, 'bg-green-600');
+
+                    // --- INJEÇÃO DO STATUS DO MOTOR ---
+                    // Adiciona dinamicamente os badges de Zebra/Ciclo se o container existir
+                    const statusContainer = document.getElementById('motor-status-container');
+                    if (statusContainer && data.debug_ia) {
+                        const d = data.debug_ia;
+                        const cor = d.tendencia_detectada === 'PADRAO' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700';
+                        statusContainer.innerHTML = `
+                    <span class="${cor} px-3 py-1 rounded-full text-[10px] font-black">MODO ${d.tendencia_detectada}</span>
+                    <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-[10px] font-black">${d.total_pendentes} PENDENTES</span>
+                `;
+                    }
+                    return data;
+                }
+            } catch (erro) { console.error("Erro nos dados:", erro); }
+        }
+
+        function renderCards(containerId, lista, corBolaPadrao, debugIa = null) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+
+            Object.entries(lista).forEach(([nome, numeros]) => {
+                const card = document.createElement('div');
+
+                // Verifica se é o card da Rede Neural para aplicar estilo especial
+                const isNeural = nome.includes("Neural") || nome.includes("IA");
+
+                card.className = isNeural
+                    ? "card-neural p-6 rounded-2xl shadow-xl transition-all hover:scale-[1.02]"
+                    : "bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition";
+
+                const corBola = isNeural ? "bg-neural" : corBolaPadrao;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="font-bold text-gray-700 uppercase text-[10px] tracking-widest">
+                            ${isNeural ? '<span class="text-indigo-600">⚡ ' + nome + '</span>' : nome}
+                        </h3>
+                        ${nome.includes("Sinergia") && debugIa && debugIa.confianca ? `
+                            <div class="text-right">
+                                <p class="text-[8px] font-bold text-gray-400 uppercase">Confiança</p>
+                                <p class="text-[10px] font-black ${debugIa.confianca.cor}">${debugIa.confianca.nivel}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="flex gap-2">
+                        ${numeros.map(n => `<div class="bola ${corBola}">${String(n).padStart(2, '0')}</div>`).join('')}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function carregarDashboards(dataPalpites) {
+            try {
+                const resp = await fetch(`${API}/dashboard`);
+                const dataDash = await resp.json();
+                if (chartAtraso) chartAtraso.destroy();
+                if (chartFrequencia) chartFrequencia.destroy();
+                if (chartRadar) chartRadar.destroy();
+
+                chartAtraso = new Chart(document.getElementById('chartAtraso'), {
+                    type: 'bar',
+                    data: {
+                        labels: dataDash.atraso.labels,
+                        datasets: [{ label: 'Concursos', data: dataDash.atraso.data, backgroundColor: '#f59e0b' }]
+                    }
+                });
+
+                chartFrequencia = new Chart(document.getElementById('chartFrequencia'), {
+                    type: 'bar',
+                    data: {
+                        labels: dataDash.frequencia.labels,
+                        datasets: [{ label: 'Vezes', data: dataDash.frequencia.data, backgroundColor: '#10b981' }]
+                    }
+                });
+
+                const meta = dataPalpites.meta_analise;
+                /* chartRadar = new Chart(document.getElementById('chartRadar'), {
+                    type: 'radar',
+                    data: {
+                        labels: ['D1', 'D2', 'D3', 'D4', 'D5', 'D6'],
+                        datasets: [
+                            { label: 'Favoritos', data: meta["Favoritos do Grupo"], borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.2)' },
+                            { label: 'Raros', data: meta["Raros do Grupo"], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.2)' },
+                            { label: 'Misto', data: meta["Misto do Grupo"], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.2)' }
+                        ]
+                    },
+                    options: { scales: { r: { min: 0, max: 60 } } }
+                }); */
+
+                chartRadar = new Chart(document.getElementById('chartRadar'), {
+                    type: 'radar',
+                    data: {
+                        labels: ['D1', 'D2', 'D3', 'D4', 'D5', 'D6'],
+                        datasets: [
+                            { label: 'Alta Convergência', data: meta["Alta Convergência"], borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.2)' },
+                            { label: 'Favoritos', data: meta["Favoritos do Grupo"], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)' },
+                            {
+                                label: 'Rede Neural (MLP)',
+                                data: meta["Predição IA (Neural MLP)"],
+                                borderColor: '#8b5cf6',
+                                backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                                borderWidth: 3,
+                                pointStyle: 'star'
+                            }
+                        ]
+                    },
+                    options: { scales: { r: { min: 0, max: 60 } } }
+                });
+            } catch (e) { console.error("Erro nos dashboards:", e); }
+        }
+
+        async function carregarSimulacao() {
+            try {
+                const tipo = document.getElementById('selectSimulacao').value;
+                const resp = await fetch(`${API}/simulacao?tipo=${tipo}`);
+                const data = await resp.json();
+                if (chartPerformance) chartPerformance.destroy();
+                chartPerformance = new Chart(document.getElementById('chartPerformance'), {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Acertos',
+                            data: data.acertos,
+                            borderColor: '#10b981',
+                            fill: true,
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 6 } } }
+                });
+                document.getElementById('resumo-premios').innerHTML = `
+                    <span class="text-white">QUADRAS: <b class="text-green-400">${data.resumo.quadras}</b></span>
+                    <span class="text-white">QUINAS: <b class="text-green-400">${data.resumo.quinas}</b></span>
+                    <span class="text-white">SENAS: <b class="text-green-400">${data.resumo.senas}</b></span>`;
+            } catch (e) { console.error("Erro na simulação:", e); }
+        }
+
+        async function carregarRanking() {
+            try {
+                const resp = await fetch(`${API}/ranking`);
+                const top3 = await resp.json();
+                const container = document.getElementById('ranking-container');
+                container.innerHTML = '';
+                top3.forEach((item, index) => {
+                    const medalha = index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉';
+                    const card = document.createElement('div');
+                    card.className = "p-6 rounded-xl border bg-gray-50 flex flex-col items-center text-center";
+                    card.innerHTML = `
+                        <span class="text-4xl mb-2">${medalha}</span>
+                        <h4 class="font-bold text-gray-800 uppercase text-sm">${item.estrategia}</h4>
+                        <p class="text-2xl font-black text-green-600 my-2">${item.pontuacao_total} <small class="text-xs text-gray-400">pts</small></p>
+                        <div class="flex gap-1 mt-2">
+                            ${item.palpite.map(n => `<span class="text-[10px] bg-white border px-1 rounded">${String(n).padStart(2, '0')}</span>`).join('')}
+                        </div>
+                        <p class="text-[10px] mt-4 text-gray-400 font-mono text-center">QUADRAS: ${item.quadras}</p>`;
+                    container.appendChild(card);
+                });
+            } catch (e) { console.error("Erro no ranking:", e); }
+        }
+
+        async function carregarAuditoria() {
+            try {
+                const resp = await fetch(`${API}/auditoria-ia`);
+                const dados = await resp.json();
+
+                if (dados && dados.length > 0) {
+                    const container = document.getElementById('container-auditoria');
+                    container.innerHTML = '';
+                    document.getElementById('secao-auditoria').classList.remove('hidden');
+
+                    dados.forEach(item => {
+                        const card = document.createElement('div');
+                        let corBorda = item.tem_resultado ? (item.faixa.includes("!") ? "border-green-500" : "border-gray-300") : "border-blue-400";
+
+                        card.className = `bg-white p-6 rounded-2xl shadow-sm border-l-8 ${corBorda} transition-all`;
+
+                        card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h4 class="font-black text-lg">Concurso ${item.concurso}</h4>
+                            <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                                ${item.tem_resultado ? item.faixa : 'Status: Aguardando Sorteio'}
+                            </p>
+                        </div>
+                        <span class="bg-gray-100 px-3 py-1 rounded-full text-sm font-bold">${item.porcentagem}% acerto</span>
+                    </div>
+                    
+                    <div class="space-y-4 mb-4">
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">Resultado Real</p>
+                            <div class="flex gap-1">
+                                ${item.real.map(n => `<span class="w-8 h-8 rounded-full ${n === 0 ? 'bg-gray-100 text-gray-300' : 'bg-gray-800 text-white'} flex items-center justify-center text-xs font-bold">${n === 0 ? '--' : n}</span>`).join('')}
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">Previsão IA</p>
+                            <div class="flex gap-1">
+                                ${item.previsto.map(n => {
+                            const ac = item.acertos.includes(n);
+                            return `<span class="w-8 h-8 rounded-full ${ac ? 'bg-green-500 text-white shadow-md' : 'bg-gray-100 text-gray-400'} flex items-center justify-center text-xs font-bold">${n}</span>`;
+                        }).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <details class="group border-t pt-4 mt-4">
+                        <summary class="list-none cursor-pointer flex items-center justify-between text-[10px] font-bold uppercase text-blue-600 hover:text-blue-800 transition">
+                            <div class="flex items-center gap-2">
+                                <span class="group-open:rotate-180 transition-transform">▼</span>
+                                Análise de Conformidade (IA vs Real)
+                            </div>
+                        </summary>
+                        
+                        <div class="mt-4 overflow-hidden rounded-xl border border-gray-200">
+                            <table class="w-full text-[10px] text-left">
+                                <thead class="bg-gray-50 border-b">
+                                    <tr>
+                                        <th class="px-3 py-2 text-gray-500">Métrica</th>
+                                        <th class="px-3 py-2 text-blue-600">Previsão IA</th>
+                                        <th class="px-3 py-2 text-gray-700">Sorteio Real</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    <tr>
+                                        <td class="px-3 py-2 font-bold text-gray-400 uppercase">Soma</td>
+                                        <td class="px-3 py-2 font-mono font-bold">${item.meta_ia.soma}</td>
+                                        <td class="px-3 py-2 font-mono">${item.tem_resultado ? item.meta_real.soma : '--'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 font-bold text-gray-400 uppercase">Paridade</td>
+                                        <td class="px-3 py-2 font-mono font-bold">${item.meta_ia.paridade}</td>
+                                        <td class="px-3 py-2 font-mono">${item.tem_resultado ? item.meta_real.paridade : '--'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-3 py-2 font-bold text-gray-400 uppercase">Primos</td>
+                                        <td class="px-3 py-2 font-mono font-bold">${item.meta_ia.primos}</td>
+                                        <td class="px-3 py-2 font-mono">${item.tem_resultado ? item.meta_real.primos : '--'}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-2 p-2 bg-gray-900 rounded-lg text-[9px] font-mono text-green-400 overflow-x-auto">
+                            CONFIG_PESOS: ${JSON.stringify(item.pesos)}
+                        </div>
+                    </details>
+                `;
+                        container.appendChild(card);
+                    });
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function syncData() {
+            const btn = document.getElementById('btnSync');
+            const originalText = btn.innerText;
+            btn.innerText = "Processando... Aguarde";
+            btn.disabled = true;
+            fetch(`${API}/sync-data`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert("Erro no processamento: " + data.message);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Erro de conexão com a API.");
+                })
+                .finally(() => {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                });
+        }
+
+        async function inicializar() {
+            await carregarResumoTopo();
+            const dataPalpites = await carregarDados();
+            if (dataPalpites) await carregarDashboards(dataPalpites);
+            await carregarSimulacao();
+            await carregarRanking();
+            await carregarAuditoria();
+            await carregarHistoricoStress();
+            await carregarComparativoIA();
+        }
+
+        async function executarStressTest() {
+            const btn = document.getElementById('btn-stress');
+            const spinner = document.getElementById('spinner-stress');
+            const textoBtn = document.getElementById('texto-btn-stress');
+            const painel = document.getElementById('painel-stress');
+            const timeline = document.getElementById('stress-timeline');
+
+            // 1. Estado de Carregamento
+            btn.disabled = true;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            spinner.classList.remove('hidden');
+            textoBtn.innerText = "Simulando...";
+            painel.classList.add('hidden'); // Esconde resultados anteriores se houver
+
+            try {
+                const resp = await fetch(`${API}/executar-stress-test`, { method: 'POST' });
+
+                if (!resp.ok) throw new Error("Erro na API");
+
+                const dados = await resp.json();
+
+                await carregarHistoricoStress();
+
+                // 2. Preencher Contadores (como fizemos antes)
+                document.getElementById('stress-media').innerText = dados.media_acertos.toFixed(2);
+                document.getElementById('stress-quadras').innerText = dados.total_quadras;
+                document.getElementById('stress-quinas').innerText = dados.total_quinas;
+                document.getElementById('stress-senas').innerText = dados.total_senas;
+
+                // 3. Gerar Timeline
+                timeline.innerHTML = '';
+                dados.historico.forEach(ponto => {
+                    const box = document.createElement('div');
+                    let cor = 'bg-gray-200';
+
+                    if (ponto.acertos === 6) cor = 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.6)] scale-125';
+                    else if (ponto.acertos === 5) cor = 'bg-purple-600 shadow-lg';
+                    else if (ponto.acertos === 4) cor = 'bg-green-500 shadow-md';
+                    else if (ponto.acertos === 3) cor = 'bg-orange-400';
+                    else if (ponto.acertos > 0) cor = 'bg-blue-300';
+
+                    box.className = `w-4 h-4 rounded-sm ${cor} transition-all hover:scale-150 cursor-help`;
+                    box.title = `Concurso ${ponto.concurso}: ${ponto.acertos} acertos`;
+                    timeline.appendChild(box);
+                });
+
+                // Mostra o painel com animação
+                painel.classList.remove('hidden');
+
+            } catch (e) {
+                console.error(e);
+                alert("Falha ao executar simulação. Verifique o console do servidor.");
+            } finally {
+                // 4. Restaurar Botão
+                btn.disabled = false;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                spinner.classList.add('hidden');
+                textoBtn.innerText = "Rodar Simulação Técnica";
+            }
+        }
+
+        async function carregarHistoricoStress() {
+            const lista = document.getElementById('lista-historico-stress');
+            try {
+                const resp = await fetch(`${API}/historico-stress`);
+                const dados = await resp.json();
+
+                if (dados.length === 0) {
+                    lista.innerHTML = `<tr><td colspan="3" class="px-6 py-4 text-center text-gray-400 italic">Nenhum histórico encontrado</td></tr>`;
+                    return;
+                }
+
+                lista.innerHTML = dados.map(item => `
+            <tr class="hover:bg-blue-50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-700">${item.data}</td>
+                <td class="px-6 py-4 font-bold text-blue-600">${item.media.toFixed(2)}</td>
+                <td class="px-6 py-4 font-mono text-[11px] text-gray-500">${item.premios}</td>
+            </tr>
+        `).join('');
+            } catch (e) {
+                console.error("Erro ao carregar histórico", e);
+            }
+        }
+
+        let chartComparativoIA;
+
+        async function carregarComparativoIA() {
+            const loader = document.getElementById('loading-comparativo');
+            try {
+                // Garantimos que o loader esteja visível ao iniciar
+                loader.classList.remove('opacity-0', 'pointer-events-none');
+
+                const resp = await fetch(`${API}/comparativo-ia-base`);
+                const d = await resp.json();
+
+                if (chartComparativoIA) chartComparativoIA.destroy();
+
+                const ctx = document.getElementById('chartComparativoIA').getContext('2d');
+                chartComparativoIA = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: d.labels,
+                        datasets: [
+                            {
+                                label: 'IA Neural (MLP)',
+                                data: d.acertos_ia,
+                                borderColor: '#6366f1',
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                borderWidth: 3,
+                                pointRadius: 4
+                            },
+                            {
+                                label: 'Média Estratégias Base',
+                                data: d.media_base,
+                                borderColor: '#94a3b8',
+                                borderDash: [5, 5],
+                                fill: false,
+                                tension: 0.4,
+                                borderWidth: 2
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { min: 0, max: 6, ticks: { stepSize: 1 } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+
+                // Esconde o loader com efeito de fade
+                loader.classList.add('opacity-0', 'pointer-events-none');
+
+            } catch (e) {
+                console.error("Erro no gráfico comparativo:", e);
+                loader.innerHTML = '<p class="text-red-500 text-[10px] font-bold">Falha ao carregar dados da IA</p>';
+            }
+        }
+
+        // Chame carregarHistoricoStress() dentro do 'finally' da sua função executarStressTest
+
+        document.getElementById('form-sorteio').onsubmit = async (e) => {
+            e.preventDefault();
+            const payload = {
+                concurso: document.getElementById('concurso').value,
+                data: document.getElementById('data').value,
+                bolas: Array.from(document.querySelectorAll('input[name="bola"]')).map(i => parseInt(i.value))
+            };
+            await fetch(`${API}/sorteios`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            toggleModal();
+            inicializar();
+        };
+
+        window.onload = inicializar;
+    </script>
+</body>
+
+</html>
