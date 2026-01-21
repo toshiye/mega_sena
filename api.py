@@ -7,7 +7,8 @@ from main import (
     simular_performance, 
     conectar_banco,
     gerar_fusao_cibernetica,
-    calcular_nivel_confianca 
+    calcular_nivel_confianca,
+    gerar_consenso_probabilidade
 )
 
 from pydantic import BaseModel
@@ -35,33 +36,27 @@ app.add_middleware(
 @app.get("/api/palpites")
 async def get_palpites():
     try:
-        # 1. Coleta dados brutos
         dados = processar_todas_estrategias()
-        palpite_neural = prever_proximo_sorteio()
+        p_neural = [int(n) for n in prever_proximo_sorteio()]
+        p_base = [int(n) for n in dados["meta"]["Alta Convergência"]]
         
-        # 2. Converte tipos NumPy para Python Puro (Essencial para evitar Erro 500)
-        p_neural_puro = [int(n) for n in palpite_neural]
-        p_base_puro = [int(n) for n in dados["meta"]["Alta Convergência"]]
-        
-        # 3. Gera a Fusão e Confiança
-        palpite_fusao = gerar_fusao_cibernetica(p_neural_puro, p_base_puro)
-        confianca = calcular_nivel_confianca(p_neural_puro, p_base_puro)
-        
-        # 4. Organiza o dicionário de saída (Mesmos nomes que o index.html espera)
-        dados["meta"]["Predição IA (Neural MLP)"] = p_neural_puro
-        dados["meta"]["Sinergia Cibernética (Fusão)"] = palpite_fusao
-        
-        # Injeta a confiança no debug_ia para o frontend
-        dados["debug_ia"]["confianca"] = confianca
-        
+        # Gerando os três conjuntos sugeridos
+        previsao_verde = p_base # Primeira card: Alta Convergência
+        sinergia_azul = gerar_fusao_cibernetica(p_neural, p_base) # Fusão IA + Estatística
+        previsao_ia = p_base # Terceiro card: mesmo valor de Previsão IA (Neural)
+
         return {
             "status": "sucesso",
             "estrategias_base": dados["base"],
-            "meta_analise": dados["meta"],
-            "debug_ia": dados["debug_ia"]
+            "meta_analise": dados["meta"], # Mantém para os cards técnicos
+            "sugestoes_elite": {
+                "Previsão IA (Neural)": previsao_verde,
+                "Sinergia Cibernética (Fusão)": sinergia_azul,
+                "Previsão IA": previsao_ia
+            },
+            "debug_ia": {**dados["debug_ia"], "confianca": calcular_nivel_confianca(p_neural, p_base)}
         }
     except Exception as e:
-        print(f"ERRO CRÍTICO NA API: {e}")
         return {"status": "erro", "mensagem": str(e)}
 
 class SorteioSchema(BaseModel):

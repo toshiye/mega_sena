@@ -107,6 +107,14 @@
         </section>
 
         <section class="mb-12">
+            <h2 class="text-2xl font-black mb-6 flex items-center gap-2">
+                <span class="text-green-500">🏆</span> Palpites de Elite (Sugestão Final)
+            </h2>
+            <div id="sugestoes-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            </div>
+        </section>
+
+        <section class="mb-12">
             <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
                 <span class="text-amber-500">★</span> Meta-Análise (Consenso das Lógicas)
             </h2>
@@ -369,12 +377,27 @@
             try {
                 const resp = await fetch(`${API}/palpites`);
                 const data = await resp.json();
+                console.log("📊 Data received from /api/palpites:", data);
+
                 if (data.status === "sucesso") {
+                    // 1. Renderiza a Nova Seção de Elite (Sugestões Finais)
+                    // Passamos uma função para definir cores dinâmicas baseadas no nome
+                    console.log("🎯 Rendering sugestoes_elite:", data.sugestoes_elite);
+                    renderCards('sugestoes-container', data.sugestoes_elite, (nome) => {
+                        if (nome === "Previsão IA") return "bg-green-600";
+                        if (nome.includes("IA") && nome.includes("Neural")) return "bg-green-600";
+                        if (nome.includes("Sinergia")) return "bg-blue-600";
+                        return "bg-amber-500";
+                    }, data.debug_ia, "auditoria");
+
+                    // 2. Renderiza as seções técnicas originais
+                    console.log("📈 Rendering meta_analise:", data.meta_analise);
                     renderCards('meta-container', data.meta_analise, 'bg-meta', data.debug_ia);
+                    
+                    console.log("🔧 Rendering estrategias_base:", data.estrategias_base);
                     renderCards('base-container', data.estrategias_base, 'bg-green-600');
 
                     // --- INJEÇÃO DO STATUS DO MOTOR ---
-                    // Adiciona dinamicamente os badges de Zebra/Ciclo se o container existir
                     const statusContainer = document.getElementById('motor-status-container');
                     if (statusContainer && data.debug_ia) {
                         const d = data.debug_ia;
@@ -386,46 +409,63 @@
                     }
                     return data;
                 }
-            } catch (erro) { console.error("Erro nos dados:", erro); }
+            } catch (erro) {
+                console.error("Erro nos dados:", erro);
+            }
         }
 
-        function renderCards(containerId, lista, corBolaPadrao, debugIa = null) {
+        function renderCards(containerId, lista, corBolaParam, debugIa = null, renderTipo = "bola") {
             const container = document.getElementById(containerId);
-            if (!container) return;
+            if (!container) {
+                console.error(`Container not found: ${containerId}`);
+                return;
+            }
+            if (!lista || typeof lista !== 'object') {
+                console.error(`Invalid data for ${containerId}:`, lista);
+                return;
+            }
             container.innerHTML = '';
 
             Object.entries(lista).forEach(([nome, numeros]) => {
                 const card = document.createElement('div');
 
-                // Verifica se é o card da Rede Neural para aplicar estilo especial
-                const isNeural = nome.includes("Neural") || nome.includes("IA");
+                // Lógica de Estilo: Se for IA, Sinergia ou Consenso, ganha destaque (card-neural)
+                const isDestaque = nome.includes("Neural") || nome.includes("IA") || nome.includes("Sinergia") || nome.includes("Consenso");
 
-                card.className = isNeural
-                    ? "card-neural p-6 rounded-2xl shadow-xl transition-all hover:scale-[1.02]"
+                card.className = isDestaque
+                    ? "card-neural p-6 rounded-2xl shadow-xl transition-all hover:scale-[1.02] bg-white"
                     : "bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition";
 
-                const corBola = isNeural ? "bg-neural" : corBolaPadrao;
+                // Define a cor da bola: se corBolaParam for uma função, executa ela; se não, usa a string direta
+                const corBola = (typeof corBolaParam === 'function') ? corBolaParam(nome) : corBolaParam;
+
+                // Renderização diferenciada para o terceiro card (Previsão IA)
+                let numerosHTML;
+                if (renderTipo === "auditoria" && nome === "Previsão IA") {
+                    numerosHTML = numeros.map(n => `<span class="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold shadow-md">${String(n).padStart(2, '0')}</span>`).join('');
+                } else {
+                    numerosHTML = numeros.map(n => `<div class="bola ${corBola}">${String(n).padStart(2, '0')}</div>`).join('');
+                }
 
                 card.innerHTML = `
-                    <div class="flex justify-between items-start mb-4">
-                        <h3 class="font-bold text-gray-700 uppercase text-[10px] tracking-widest">
-                            ${isNeural ? '<span class="text-indigo-600">⚡ ' + nome + '</span>' : nome}
-                        </h3>
-                        ${nome.includes("Sinergia") && debugIa && debugIa.confianca ? `
-                            <div class="text-right">
-                                <p class="text-[8px] font-bold text-gray-400 uppercase">Confiança</p>
-                                <p class="text-[10px] font-black ${debugIa.confianca.cor}">${debugIa.confianca.nivel}</p>
-                            </div>
-                        ` : ''}
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="font-bold text-gray-700 uppercase text-[10px] tracking-widest">
+                    ${isDestaque ? '<span class="text-indigo-600">✨ ' + nome + '</span>' : nome}
+                </h3>
+                ${nome.includes("Sinergia") && debugIa && debugIa.confianca ? `
+                    <div class="text-right">
+                        <p class="text-[8px] font-bold text-gray-400 uppercase">Confiança</p>
+                        <p class="text-[10px] font-black ${debugIa.confianca.cor}">${debugIa.confianca.nivel}</p>
                     </div>
-                    <div class="flex gap-2">
-                        ${numeros.map(n => `<div class="bola ${corBola}">${String(n).padStart(2, '0')}</div>`).join('')}
-                    </div>
-                `;
+                ` : ''}
+            </div>
+            <div class="flex gap-2">
+                ${numerosHTML}
+            </div>
+        `;
                 container.appendChild(card);
             });
         }
-
         async function carregarDashboards(dataPalpites) {
             try {
                 const resp = await fetch(`${API}/dashboard`);

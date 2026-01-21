@@ -278,6 +278,9 @@ def processar_todas_estrategias():
     # Conjunto 1: Alta Convergência (Otimizado pela IA)
     palpite_ia = gerar_alta_convergencia_filtrada(pesos_final)
 
+    # "Misto do Grupo" é igual a "Alta Convergência" para consistência
+    misto = sorted(palpite_ia)
+
     cur.close()
     conn.close()
 
@@ -291,12 +294,13 @@ def processar_todas_estrategias():
         "meta": {
             "Alta Convergência": sorted(palpite_ia),
             "Favoritos do Grupo": sorted(meta_frequentes),
-            "Misto do Grupo": sorted(random.sample(list(set(palpite_ia + meta_frequentes)), 6)) # Adicionado para o HTML não quebrar
+            "Misto do Grupo": misto
         },
         "debug_ia": {
             "tendencia_detectada": tendencia_proxima,
             "total_pendentes": len(dezenas_pendentes)
-        }
+        },
+        "palpite_ia_raw": palpite_ia
     }
 
 def processar_matriz_afinidade():
@@ -609,3 +613,13 @@ def calcular_nivel_confianca(palpite_neural, palpite_estatistico):
         return {"nivel": "Média", "cor": "text-yellow-500", "percentual": 60}
     else:
         return {"nivel": "Baixa", "cor": "text-red-500", "percentual": 35}
+    
+def gerar_consenso_probabilidade(palpites_lista):
+    """
+    Recebe uma lista de palpites (listas de listas) e retorna os 
+    6 números que mais se repetiram entre todos os modelos.
+    """
+    pool = [num for sublista in palpites_lista for num in sublista]
+    contagem = Counter(pool)
+    # Pega os 6 mais comuns, mas garante que sejam inteiros nativos
+    return sorted([int(n) for n, c in contagem.most_common(6)])
