@@ -36,27 +36,40 @@ app.add_middleware(
 @app.get("/api/palpites")
 async def get_palpites():
     try:
+        # 1. Mantém a lógica original intacta
         dados = processar_todas_estrategias()
         p_neural = [int(n) for n in prever_proximo_sorteio()]
         p_base = [int(n) for n in dados["meta"]["Alta Convergência"]]
         
-        # Gerando os três conjuntos sugeridos
-        previsao_verde = p_base # Primeira card: Alta Convergência
-        sinergia_azul = gerar_fusao_cibernetica(p_neural, p_base) # Fusão IA + Estatística
-        previsao_ia = p_base # Terceiro card: mesmo valor de Previsão IA (Neural)
+        # 2. Busca o valor REAL da Auditoria no Banco (O Verde da imagem)
+        # Isso garante que o 3º card seja diferente dos outros e real.
+        try:
+            conn = conectar_banco()
+            cur = conn.cursor()
+            cur.execute("SELECT dezenas_previstas FROM historico_previsoes ORDER BY concurso_alvo DESC LIMIT 1")
+            row = cur.fetchone()
+            cur.close()
+            conn.close()
+            # Se achou no banco, usa. Se não, usa o neural como fallback.
+            p_auditoria_real = row[0] if row else p_neural
+        except:
+            p_auditoria_real = p_neural # Segurança caso o banco falhe
 
+        # 3. Organiza os conjuntos sem alterar a estrutura de chaves (Keys)
+        # Assim o seu index.html continua funcionando sem erros.
         return {
             "status": "sucesso",
             "estrategias_base": dados["base"],
-            "meta_analise": dados["meta"], # Mantém para os cards técnicos
+            "meta_analise": dados["meta"],
             "sugestoes_elite": {
-                "Previsão IA (Neural)": previsao_verde,
-                "Sinergia Cibernética (Fusão)": sinergia_azul,
-                "Previsão IA": previsao_ia
+                "Previsão IA (Neural)": p_neural,        # Agora recebe a IA real (Roxo)
+                "Sinergia Cibernética (Fusão)": gerar_fusao_cibernetica(p_neural, p_base), # (Azul)
+                "Previsão IA": p_auditoria_real          # Agora recebe o valor do Banco (Verde)
             },
             "debug_ia": {**dados["debug_ia"], "confianca": calcular_nivel_confianca(p_neural, p_base)}
         }
     except Exception as e:
+        print(f"Erro detectado: {e}")
         return {"status": "erro", "mensagem": str(e)}
 
 class SorteioSchema(BaseModel):
