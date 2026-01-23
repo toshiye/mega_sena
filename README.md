@@ -94,8 +94,9 @@ WITH ultimas_aparicoes AS (
 SELECT n.numero, (SELECT MAX(concurso) FROM sorteios) - COALESCE(ua.ultimo_concurso, 0) as concursos_de_atraso
 FROM generate_series(1, 60) n(numero)
 LEFT JOIN ultimas_aparicoes ua ON n.numero = ua.numero;
+```
 
-🧠 4. Lógica de IA e Estratégia de Elite
+## 🧠 4. Lógica de IA e Estratégia de Elite
 Sinergia Cibernética (Fusão)
 O sistema utiliza um algoritmo de fusão que cruza a Rede Neural com a Estatística Bayesiana.
 
@@ -114,12 +115,12 @@ Primos: Presença controlada de 1 a 2 números primos por jogo.
 
 Quadrantes: Distribuição espacial no volante para evitar aglomerações.
 
-📊 5. Glossário do Dashboard
+## 📊 5. Glossário do Dashboard
 Card,Origem,Função
 Previsão IA (Neural),IA Viva,"Detecta tendências caóticas e ""Zebras""."
 Sinergia Cibernética,Híbrido,O consenso de maior confiança do sistema.
 Previsão IA (Auditoria),Banco de Dados,O palpite oficial registrado no último sync.
 Alta Convergência,Estatística,Baseado puramente na frequência e atraso histórico.
 
-📈 6. Resultados Esperados
+## 📈 6. Resultados Esperados
 O sistema é projetado para Maximização de Quadras. Através do "Stress Test" (Backtesting), o motor é recalibrado para encontrar zonas de probabilidade onde a densidade de acertos é superior à escolha aleatória, visando retornos consistentes em simulações de longo prazo.
