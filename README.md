@@ -93,3 +93,4 @@ python api.py   # Start server at http://localhost:8000
 📈 5. Expected Results & Backtesting
 The engine is fine-tuned for "Quadra Maximization". Through rigorous Stress Testing (Backtesting), the system is recalibrated to identify probability zones where hit density consistently outperforms random selection in long-term simulations.
 ```
+4. Open "index.html" on your browser.
