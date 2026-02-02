@@ -1,79 +1,52 @@
-# 🏆 Mega-Sena Meta-Intelligence Hub
+# 🎰 Mega-Sena Meta-Intelligence Hub
 
-Este projeto é uma plataforma avançada de engenharia de dados e inteligência artificial aplicada à análise probabilística da Mega-Sena. O sistema utiliza um motor híbrido que combina **Estatística Bayesiana**, **Matrizes de Afinidade** e **Redes Neurais Multicamadas (MLP)** para gerar palpites de alta convergência.
-
----
-
-## 🛠 1. Arquitetura do Sistema
-
-O projeto é estruturado em quatro pilares principais:
-1.  **Core Engine (`main.py`):** Processamento estatístico, filtros biométricos e lógica de otimização via Backtest.
-2.  **AI Layer (`ia_neural.py`):** Rede Neural Regressora que busca padrões não lineares em sorteios sequenciais.
-3.  **API Gateway (`api.py`):** Servidor FastAPI que orquestra a comunicação entre o banco de dados e a interface.
-4.  **Intelligence Hub (`index.html`):** Dashboard analítico com gráficos em tempo real e visualização de dados.
+An advanced **Data Engineering** and **Artificial Intelligence** platform applied to probabilistic analysis. This system employs a hybrid engine combining **Bayesian Statistics**, **Affinity Matrices**, and **Multi-Layer Perceptron (MLP) Neural Networks** to generate high-convergence predictions.
 
 ---
 
-## 🚀 2. Como Rodar o Projeto
+## 🛠 1. System Architecture
+The project is structured into four high-performance pillars:
 
-### Pré-requisitos
-* **Python 3.10+**
-* **PostgreSQL 14+**
-* **Bibliotecas:** `fastapi`, `uvicorn`, `psycopg2`, `pandas`, `scikit-learn`, `python-dotenv`, `numpy`.
-
-### Instalação e Execução
-
-1.  **Clone o Repositório:**
-    ```bash
-    git clone [https://github.com/toshiye/mega_sena.git](https://github.com/toshiye/mega_sena.git)
-    cd mega_sena
-    ```
-
-2.  **Variáveis de Ambiente:**
-    Crie um arquivo `.env` na raiz do projeto:
-    ```env
-    DB_HOST=localhost
-    DB_NAME=seu_banco
-    DB_USER=seu_usuario
-    DB_PASS=sua_senha
-    DB_PORT=5432
-    ```
-
-3.  **Sincronize e Inicie:**
-    ```bash
-    python sync.py  # Baixa histórico oficial
-    python api.py   # Inicia o servidor em http://localhost:8000
-    ```
+1. **Core Engine (`main.py`):** Statistical processing, **biometric filtering**, and **Backtest-driven** optimization logic.
+2. **AI Layer (`ia_neural.py`):** A **Neural Regressor** designed to identify non-linear patterns in sequential draws.
+3. **API Gateway (`api.py`):** A robust **FastAPI** server orchestrating communication between the database and the interface.
+4. **Intelligence Hub (`index.html`):** An analytical dashboard featuring **real-time charts** and complex data visualization.
 
 ---
 
-## 🏛️ 3. Estrutura do Banco de Dados (SQL)
+## 🧠 2. AI Logic & Elite Strategy: "Cybernetic Synergy"
+The system utilizes a **Fusion Algorithm** that intersects Neural Networks with Bayesian Statistics:
 
-Execute os comandos abaixo no seu PostgreSQL para garantir a compatibilidade total com o sistema.
+* **Anchors:** Numbers identified by both models receive maximum weighting.
+* **Refinement:** The AI operates on the "margin of error," suggesting numbers that break purely linear trends.
 
-### Tabelas Principais
+### **Biometric Filters (Elite Validation)**
+No prediction is displayed without passing strict feasibility constraints:
+* **Sum Range:** Optimized between 150 and 220.
+* **Parity:** Balanced ratio of Even/Odd (2:4, 3:3, 4:2).
+* **Prime Numbers:** Controlled presence (1 to 2 primes per game).
+* **Quadrants:** Spatial distribution across the ticket to avoid clusters.
+
+---
+
+## 🏛️ 3. Database Schema & SQL Engineering
+The persistence layer is designed for high-performance analytical queries using **PostgreSQL 14+**.
+
+### **Key Tables & Advanced Views**
 ```sql
+-- Main Draws Table with Clustering and Popularity Index
 CREATE TABLE sorteios (
     concurso INT PRIMARY KEY,
     data_sorteio DATE,
     bola1 INT, bola2 INT, bola3 INT, bola4 INT, bola5 INT, bola6 INT,
     ganhadores_sena INT DEFAULT 0,
-    ganhadores_quina INT DEFAULT 0,
-    ganhadores_quadra INT DEFAULT 0,
     valor_estimado_proximo DECIMAL(15,2),
     acumulou BOOLEAN,
     indice_popularidade DECIMAL(5,2) DEFAULT 1.0,
     cluster_tipo VARCHAR(20)
 );
 
-CREATE TABLE historico_previsoes (
-    id SERIAL PRIMARY KEY,
-    concurso_alvo INT UNIQUE,
-    dezenas_previstas INT[],
-    pesos_utilizados JSONB,
-    data_geracao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
+-- Advanced View for Number Frequency Analysis
 CREATE OR REPLACE VIEW v_frequencia_numeros AS
 SELECT numero, COUNT(*) as frequencia
 FROM (
@@ -82,6 +55,7 @@ FROM (
     UNION ALL SELECT bola5 FROM sorteios UNION ALL SELECT bola6 FROM sorteios
 ) as t GROUP BY numero ORDER BY frequencia DESC;
 
+-- CTE-based View for Recency/Delay Analysis (Gap Analysis)
 CREATE OR REPLACE VIEW v_atraso_numeros AS
 WITH ultimas_aparicoes AS (
     SELECT numero, MAX(concurso) as ultimo_concurso
@@ -95,32 +69,27 @@ SELECT n.numero, (SELECT MAX(concurso) FROM sorteios) - COALESCE(ua.ultimo_concu
 FROM generate_series(1, 60) n(numero)
 LEFT JOIN ultimas_aparicoes ua ON n.numero = ua.numero;
 ```
+## 🚀 4. How to Run
+Prerequisites
+Python 3.10+ | PostgreSQL 14+
 
-## 🧠 4. Lógica de IA e Estratégia de Elite
-Sinergia Cibernética (Fusão)
-O sistema utiliza um algoritmo de fusão que cruza a Rede Neural com a Estatística Bayesiana.
+Key Libs: fastapi, scikit-learn, pandas, psycopg2, numpy.
 
-Âncoras: Números presentes em ambos os modelos ganham peso máximo.
+Installation
+1. Clone & Setup:
 
-Refino: A IA atua na "margem de erro", sugerindo dezenas que quebram tendências puramente lineares.
+``` Bash
+git clone https://github.com/toshiye/mega_sena.git
+cd mega_sena
+pip install -r requirements.txt
+```
+2. Environment Variables (.env): Configure your DB_HOST, DB_NAME, DB_USER, and DB_PASS.
 
-Filtros Biométricos (Validação de Elite)
-Nenhum palpite é exibido sem passar por filtros de viabilidade:
+3. Sync & Execute:
 
-Soma: Entre 150 e 220.
-
-Paridade: Equilíbrio entre Pares e Ímpares (2:4, 3:3, 4:2).
-
-Primos: Presença controlada de 1 a 2 números primos por jogo.
-
-Quadrantes: Distribuição espacial no volante para evitar aglomerações.
-
-## 📊 5. Glossário do Dashboard
-Card,Origem,Função
-Previsão IA (Neural),IA Viva,"Detecta tendências caóticas e ""Zebras""."
-Sinergia Cibernética,Híbrido,O consenso de maior confiança do sistema.
-Previsão IA (Auditoria),Banco de Dados,O palpite oficial registrado no último sync.
-Alta Convergência,Estatística,Baseado puramente na frequência e atraso histórico.
-
-## 📈 6. Resultados Esperados
-O sistema é projetado para Maximização de Quadras. Através do "Stress Test" (Backtesting), o motor é recalibrado para encontrar zonas de probabilidade onde a densidade de acertos é superior à escolha aleatória, visando retornos consistentes em simulações de longo prazo.
+```Bash
+python sync.py  # Download official historical data
+python api.py   # Start server at http://localhost:8000
+📈 5. Expected Results & Backtesting
+The engine is fine-tuned for "Quadra Maximization". Through rigorous Stress Testing (Backtesting), the system is recalibrated to identify probability zones where hit density consistently outperforms random selection in long-term simulations.
+```
